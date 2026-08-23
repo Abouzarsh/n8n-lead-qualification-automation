@@ -1,0 +1,625 @@
+{
+  "name": "AI Lead Qualification & Follow-Up Automation - Public Template",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Free Automation Audit for Agencies",
+        "formDescription": "Tell us about your current lead process. We’ll identify opportunities to reduce manual work and improve response times through automation.\n",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Full Name",
+              "fieldName": "full_name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "fieldName": "work_email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Company / Agency Name",
+              "fieldName": "company_name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Website",
+              "fieldName": "website"
+            },
+            {
+              "fieldLabel": "Monthly Lead Volume",
+              "fieldType": "dropdown",
+              "fieldName": "monthly_leads",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "0-20"
+                  },
+                  {
+                    "option": "21-50"
+                  },
+                  {
+                    "option": "51-100"
+                  },
+                  {
+                    "option": "101-300"
+                  },
+                  {
+                    "option": "300+"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "What is your biggest lead-management challenge?",
+              "fieldType": "textarea",
+              "fieldName": "main_challenge",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Estimated Automation Budget",
+              "fieldType": "dropdown",
+              "fieldName": "automation_budget",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Under $500"
+                  },
+                  {
+                    "option": "$500-$1,500"
+                  },
+                  {
+                    "option": "$1,500-$5,000"
+                  },
+                  {
+                    "option": "$5,000+"
+                  },
+                  {
+                    "option": "Not sure yet"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Implementation Timeline",
+              "fieldType": "dropdown",
+              "fieldName": "implementation_timeline",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Immediately"
+                  },
+                  {
+                    "option": "Within 30 days"
+                  },
+                  {
+                    "option": "Within 3 months"
+                  },
+                  {
+                    "option": "Just exploring"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Contact Consent",
+              "fieldType": "checkbox",
+              "fieldName": "contact_consent",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "I agree to be contacted about this request."
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Thank you — your request has been received.  We’ll review your current lead process and follow up with practical automation recommendations and next steps."
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ce0f3361-839b-4d86-8ff9-c005d50225e0",
+      "name": "On form submission",
+      "webhookId": "ce0f3361-839b-4d86-8ff9-c005d50225e0"
+    },
+    {
+      "parameters": {
+        "jsCode": "const volumeScores = {\n  '0-20': 5,\n  '21-50': 10,\n  '51-100': 20,\n  '101-300': 25,\n  '300+': 30,\n};\n\nconst budgetScores = {\n  'Under $500': 5,\n  '$500-$1,500': 15,\n  '$1,500-$5,000': 25,\n  '$5,000+': 30,\n  'Not sure yet': 8,\n};\n\nconst timelineScores = {\n  'Immediately': 25,\n  'Within 30 days': 20,\n  'Within 3 months': 10,\n  'Just exploring': 3,\n};\n\nreturn $input.all().map((item) => {\n  const lead = item.json;\n  let score = 0;\n  const reasons = [];\n\n  const volumeScore = volumeScores[lead.monthly_leads] ?? 0;\n  score += volumeScore;\n\n  if (volumeScore >= 20) {\n    reasons.push('High lead volume');\n  }\n\n  const budgetScore = budgetScores[lead.automation_budget] ?? 0;\n  score += budgetScore;\n\n  if (budgetScore >= 25) {\n    reasons.push('Strong implementation budget');\n  }\n\n  const timelineScore = timelineScores[lead.implementation_timeline] ?? 0;\n  score += timelineScore;\n\n  if (timelineScore >= 20) {\n    reasons.push('High purchase urgency');\n  }\n\n  const challenge = String(lead.main_challenge ?? '').toLowerCase();\n\n  const painKeywords = [\n    'slow',\n    'lose',\n    'lost',\n    'manual',\n    'follow-up',\n    'follow up',\n    'response',\n    'crm',\n    'missed',\n    'qualification',\n  ];\n\n  const hasStrongPain =\n    challenge.length >= 20 &&\n    painKeywords.some((keyword) => challenge.includes(keyword));\n\n  if (hasStrongPain) {\n    score += 15;\n    reasons.push('Clear operational pain');\n  } else if (challenge.length >= 20) {\n    score += 8;\n    reasons.push('Defined business challenge');\n  }\n\n  if (lead.company_name && lead.website) {\n    score += 5;\n    reasons.push('Identifiable business');\n  }\n\n  score = Math.min(score, 100);\n\n  let leadTemperature;\n  let priority;\n  let recommendedAction;\n\n  if (score >= 70) {\n    leadTemperature = 'Hot';\n    priority = 'High';\n    recommendedAction =\n      'Contact within 15 minutes and offer a discovery call';\n  } else if (score >= 45) {\n    leadTemperature = 'Warm';\n    priority = 'Medium';\n    recommendedAction =\n      'Send a relevant case study and follow up within 24 hours';\n  } else {\n    leadTemperature = 'Cold';\n    priority = 'Low';\n    recommendedAction =\n      'Add to a nurture sequence and follow up later';\n  }\n\n  return {\n    json: {\n      ...lead,\n      lead_score: score,\n      lead_temperature: leadTemperature,\n      priority,\n      recommended_action: recommendedAction,\n      qualification_reasons: reasons,\n      scored_at: new Date().toISOString(),\n    },\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "37ffa9f5-27be-45d6-aa8b-a6ef0794be9c",
+      "name": "Score & Qualify Lead"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "agency_leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "contact_consent": "={{ $json.contact_consent.length > 0 }}",
+            "full_name": "={{ $json.full_name }}",
+            "work_email": "={{ $json.work_email }}",
+            "company_name": "={{ $json.company_name }}",
+            "website": "={{ $json.website }}",
+            "monthly_leads": "={{ $json.monthly_leads }}",
+            "main_challenge": "={{ $json.main_challenge }}",
+            "automation_budget": "={{ $json.automation_budget }}",
+            "implementation_timeline": "={{ $json.implementation_timeline }}",
+            "lead_score": "={{ $json.lead_score }}",
+            "lead_temperature": "={{ $json.lead_temperature }}",
+            "priority": "={{ $json.priority }}",
+            "recommended_action": "={{ $json.recommended_action }}",
+            "qualification_reasons": "={{ $json.qualification_reasons.join(' | ') }}",
+            "scored_at": "={{ $json.scored_at }}",
+            "submitted_at": "={{ $json.submittedAt }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "full_name",
+              "displayName": "full_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "work_email",
+              "displayName": "work_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "monthly_leads",
+              "displayName": "monthly_leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "main_challenge",
+              "displayName": "main_challenge",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "automation_budget",
+              "displayName": "automation_budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "implementation_timeline",
+              "displayName": "implementation_timeline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "contact_consent",
+              "displayName": "contact_consent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "lead_temperature",
+              "displayName": "lead_temperature",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "recommended_action",
+              "displayName": "recommended_action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "qualification_reasons",
+              "displayName": "qualification_reasons",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "submitted_at",
+              "displayName": "submitted_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "scored_at",
+              "displayName": "scored_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "d581b5f3-1ee0-482c-b4fd-9574b63f9a76",
+      "name": "Store Lead"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lead_temperature }}",
+                    "rightValue": "Hot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "af2851ff-41d5-460a-8379-e18ef51b2b53"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Hot"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b7f50417-b108-4335-abbb-c7ef80eb98f5",
+                    "leftValue": "={{ $json.lead_temperature }}",
+                    "rightValue": "Warm",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Warm"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d93045c4-9a91-415f-b605-532ad4cf911a",
+                    "leftValue": "={{ $json.lead_temperature }}",
+                    "rightValue": "Cold",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Cold"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        -16
+      ],
+      "id": "3250ebef-7533-44a2-b7a9-76f07cf6c92f",
+      "name": "Route by Lead Temperature"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🔥 HOT LEAD — Immediate Follow-Up\n\n👤 Name: {{ $json.full_name }}\n🏢 Company: {{ $json.company_name }}\n📧 Email: {{ $json.work_email }}\n🌐 Website: {{ $json.website || 'Not provided' }}\n\n📊 Lead Score: {{ $json.lead_score }}/100\n📈 Monthly Leads: {{ $json.monthly_leads }}\n💰 Budget: {{ $json.automation_budget }}\n⏱ Timeline: {{ $json.implementation_timeline }}\n\n🎯 Main Challenge:\n{{ $json.main_challenge }}\n\n✅ Qualification Reasons:\n{{ $json.qualification_reasons }}\n\n🚀 Recommended Action:\n{{ $json.recommended_action }}\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        -192
+      ],
+      "id": "51952df3-fbfb-4120-bd75-ca1f68415c83",
+      "name": "Send a text message",
+      "webhookId": "51952df3-fbfb-4120-bd75-ca1f68415c83"
+    },
+    {
+      "parameters": {
+        "amount": 24,
+        "unit": "hours"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        0
+      ],
+      "id": "7ed3438a-8857-4a04-87ff-933357865afd",
+      "name": "Wait Before Warm Follow-Up",
+      "webhookId": "7ed3438a-8857-4a04-87ff-933357865afd"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🟠 WARM LEAD — Follow-Up Reminder\n\n👤 Name: {{ $json.full_name }}\n🏢 Company: {{ $json.company_name }}\n📧 Email: {{ $json.work_email }}\n🌐 Website: {{ $json.website || 'Not provided' }}\n\n📊 Lead Score: {{ $json.lead_score }}/100\n📈 Monthly Leads: {{ $json.monthly_leads }}\n💰 Budget: {{ $json.automation_budget }}\n⏱ Timeline: {{ $json.implementation_timeline }}\n\n🎯 Main Challenge:\n{{ $json.main_challenge }}\n\n📌 Recommended Follow-Up:\n{{ $json.recommended_action }}\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        0
+      ],
+      "id": "edd0df07-b59e-4986-a7a3-510a33309cd8",
+      "name": "Send Warm Follow-Up Reminder",
+      "webhookId": "edd0df07-b59e-4986-a7a3-510a33309cd8"
+    },
+    {
+      "parameters": {
+        "amount": 7,
+        "unit": "days"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        192
+      ],
+      "id": "8371e087-1b7f-40ec-bdc6-6ad7d8d13e79",
+      "name": "Wait Before Cold Nurture",
+      "webhookId": "8371e087-1b7f-40ec-bdc6-6ad7d8d13e79"
+    },
+    {
+      "parameters": {
+        "fromEmail": "Your Name <you@example.com>",
+        "toEmail": "={{ $json.work_email }}",
+        "subject": "=3 practical automation ideas for {{ $json.company_name }}",
+        "emailFormat": "text",
+        "text": "=Hi {{ $json.full_name }},\n\nThank you for sharing information about {{ $json.company_name }} and your current lead process.\n\nBased on the challenge you mentioned:\n\n“{{ $json.main_challenge }}”\n\nHere are three practical automations that may help:\n\n1. Capture all incoming leads in one organized system.\n2. Automatically score and prioritize high-intent leads.\n3. Send instant responses and follow-up reminders so opportunities are not missed.\n\nThese improvements can be implemented gradually without replacing all your current tools.\n\nIf you reply with the tools your team currently uses, I’ll send you a simple automation workflow outline—no obligation.\n\nBest regards,\nYour Name\nAI Automation Developer\nn8n | Python | API Integrations\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1072,
+        192
+      ],
+      "id": "cf945697-ca4f-4e72-8acd-ddb2ce7cda5a",
+      "name": "Send an Email",
+      "webhookId": "cf945697-ca4f-4e72-8acd-ddb2ce7cda5a"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Score & Qualify Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score & Qualify Lead": {
+      "main": [
+        [
+          {
+            "node": "Store Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Lead": {
+      "main": [
+        [
+          {
+            "node": "Route by Lead Temperature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Lead Temperature": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait Before Warm Follow-Up",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait Before Cold Nurture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before Warm Follow-Up": {
+      "main": [
+        [
+          {
+            "node": "Send Warm Follow-Up Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before Cold Nurture": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
