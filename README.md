@@ -6,7 +6,7 @@
 
 ![n8n lead qualification workflow](AI-Lead-Qualification-Portfolio-Cover.png)
 
-A production-tested n8n workflow and portfolio project by **Abouzar Shabnani**.
+An inspectable n8n workflow portfolio project by **Aboozar Shabnani**. Integration testing and deployment depend on the credentials and services configured in the target n8n environment.
 
 ## Business problem
 
