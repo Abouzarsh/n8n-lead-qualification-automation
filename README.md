@@ -1,5 +1,9 @@
 # AI Lead Qualification & Follow-Up Automation
 
+**Portfolio navigation:** [Selected AI & Automation Projects](PORTFOLIO.md) · [Importable n8n workflow](AI-Lead-Qualification-Public-Template.json)
+
+**For prospective clients:** This implementation demonstrates transparent lead scoring, persistent n8n Data Table records, Telegram notifications, and scheduled follow-up paths. The public template needs service credentials and setup before deployment; see the configuration steps below.
+
 ![n8n lead qualification workflow](AI-Lead-Qualification-Portfolio-Cover.png)
 
 A production-tested n8n workflow and portfolio project by **Abouzar Shabnani**.
